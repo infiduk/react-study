@@ -1,38 +1,132 @@
-import React from 'react';
-import Hello from './Hello';
-import Wrapper from './Wrapper';
-import Counter from './Counter';
-import InputSample from './inputSample';
+import React, { useRef, useState, useMemo, useCallback, useReducer } from 'react';
 import UserList from './userList';
+import CreateUser from './CreateUser';
 
-import './App.css';
+function reducer(state, action) {
+  console.log(action)
+  switch (action.type) {
+    case 'CHANGE_INPUT':
+      return {
+        ...state,
+        inputs: {
+          ...state.inputs,
+          [action.name]: action.value
+        }
+      };
+    case 'CREATE_USER':
+      return {
+        inputs: initialState.inputs,
+        users: [...state.users, action.user]
+        // users: state.users.concat(action.user)
+      }
+    case 'REMOVE_USER':
+      return {
+        ...state,
+        users: state.users.filter(user => user.id !== action.id)
+      }
+    case 'TOGGLE_ACTIVE':
+      return {
+        ...state,
+        users: state.users.map(user =>
+          user.id === action.id ? { ...user, active: !user.action } : user
+        )
+      }
+    default:
+      return state;
+  }
+}
+
+function countActiveUsers(users) {
+  return users.filter(user => user.active).length;
+}
+
+const initialState = {
+  inputs: {
+    username: '',
+    email: ''
+  },
+  users: [
+    {
+      id: 1,
+      username: 'velopert',
+      email: 'public.velopert@gmail.com',
+      active: true
+    },
+    {
+      id: 2,
+      username: 'tester',
+      email: 'tester@example.com',
+      active: false
+    },
+    {
+      id: 3,
+      username: 'liz',
+      email: 'liz@example.com',
+      active: false
+    }
+  ]
+};
 
 function App() {
-  const name = "이름"
-  // 파일 내에서 style 정의
-  const style = {
-    backgroundColor: 'black',
-    color: 'aqua',
-    fontSize: 24, // 기본 단위 px
-    padding: '1rem' // 다른 단위 사용 시 문자열로 설정
-  }
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { users } = state;
+  const { username, email } = state.inputs;
+
+  const nextId = useRef(4);
+
+  const count = useMemo(() => countActiveUsers(users), [users]);
+
+  const onToggle = useCallback(
+    id => {
+      dispatch({
+        type: 'TOGGLE_ACTIVE',
+        id
+      });
+    }, []);
+
+  const onRemove = useCallback(
+    id => {
+      dispatch({
+        type: 'REMOVE_USER',
+        id
+      });
+    }, []);
+
+  const onCreate = useCallback(
+    () => {
+      dispatch({
+        type: 'CREATE_USER',
+        user: {
+          id: nextId.current,
+          username,
+          email
+        }
+      });
+      nextId.current += 1;
+    }, [username, email]);
+
+  const onChange = useCallback(
+    e => {
+      const { name, value } = e.target;
+      dispatch({
+        type: 'CHANGE_INPUT',
+        name,
+        value
+      });
+    }, []);
+
   return (
     <>
-    {/* 여러 개의 Component 를 띄우려면, <div> 로 감싸거나 <>(Fragment) 로 감싸주어야 함 */}
-    <Counter />
-    <Wrapper>
-      {/* Component 안에 자식 Component 넣기 */}
-      <Hello value="pink" />
-      <Hello value="yellow" />
-    </Wrapper>
-    <Hello />
-    {/* bool 타입의 props 를 넘길 때, 값을 지정하지 않으면 true 가 넘어감 */}
-    <Hello value="red" isSpecial />
-    <div style={style}>React</div>
-    {/* CSS Class 를 설정할 때 class 가 아닌 className 으로 줘야 함 */}
-    <div className="gray-box">{name}</div>
-    <InputSample />
-    <UserList />
+      <CreateUser
+        username={username}
+        email={email}
+        onChange={onChange}
+        onCreate={onCreate} />
+      <UserList
+        users={users}
+        onToggle={onToggle}
+        onRemove={onRemove} />
+      <div>활성사용자 수 : {count}</div>
     </>
   );
 }
