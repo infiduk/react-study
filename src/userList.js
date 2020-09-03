@@ -1,11 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useContext } from 'react';
+import { UserDispatch } from './App';
 
 // Component 의 props 가 바뀌지 않았다면, 리렌더링을 방지하여 Component 의 성능을 최적화 할 수 있는 React.memo 사용
-const User = React.memo(function User({ user, onRemove, onToggle }) {
+// Context API 사용을 위해 onRemove, onToggle 삭제
+const User = React.memo(function User({ user }) {
+// const User = React.memo(function User({ user, onRemove, onToggle }) {
   const style = {
     cursor: 'pointer',
     color: user.active ? 'green' : 'black'
   }
+
+  // UserDispatch 사용을 위한 선언
+  const dispatch = useContext(UserDispatch);
 
   /*
   useEffect 의 첫번째 parameter 에는 함수, 두번째 parameter 에는 의존 값이 들어있는 배열 (deps) 를 넣어줌
@@ -41,16 +47,20 @@ const User = React.memo(function User({ user, onRemove, onToggle }) {
   return (
     <div>
       <b
-        onClick={() => onToggle(user.id)}
+        onClick={() => { dispatch({ type: 'TOGGLE_ACTIVE', id: user.id })}}
+        // onClick={() => onToggle(user.id)}
         style={style}
       >{user.username}</b>
       <span>({user.email})</span>
-      <button onClick={() => onRemove(user.id)}>삭제</button>
+      <button onClick={() => { dispatch({ type: 'REMOVE_USER', id: user.id })}}>삭제</button>
+      {/* <button onClick={() => onRemove(user.id)}>삭제</button> */}
     </div>
   );
 });
 
-function UserList({ users, onRemove, onToggle }) {
+// Context API 사용을 위해 onRemove, onToggle 삭제
+function UserList({ users }) {
+// function UserList({ users, onRemove, onToggle }) {
   return (
     <>
       {/* 배열 내 모든 항목에 대한 함수 호출 결과를 새로운 배열로 만들어 반환 */}
@@ -61,8 +71,9 @@ function UserList({ users, onRemove, onToggle }) {
         <User
           user={user}
           key={user.id}
-          onRemove={onRemove}
-          onToggle={onToggle} />
+          // onRemove={onRemove}
+          // onToggle={onToggle} />
+        />
 
         /*
         각 원소마다 고유한 값을 가지고 있지 않을 경우 아래와 같이 map 의 두 번째 인자인 index 를 활용

@@ -1,6 +1,7 @@
-import React, { useMemo, useReducer } from 'react';
+import React, { useRef, useMemo, useCallback, useReducer } from 'react';
 import UserList from './userList';
 import CreateUser from './CreateUser';
+import useInputs from './hooks/useInputs';
 import produce from 'immer';
 
 /*
@@ -42,14 +43,14 @@ function reducer(state, action) {
       return produce(state, draft => {
         draft.users.push(action.user);
       });
-    /*
-    return {
-      // 커스텀 hooks useInputs 를 이용하기 때문에 주석 처리
-      // inputs: initialState.inputs,
-      users: [...state.users, action.user]
-      // users: state.users.concat(action.user)
-    }
-    */
+      /*
+      return {
+        // 커스텀 hooks useInputs 를 이용하기 때문에 주석 처리
+        // inputs: initialState.inputs,
+        users: [...state.users, action.user]
+        // users: state.users.concat(action.user)
+      }
+      */
     case 'REMOVE_USER':
       // immer 를 사용한 방법
       return produce(state, draft => {
@@ -57,12 +58,12 @@ function reducer(state, action) {
         draft.users.splice(index, 1);
       });
 
-    /*
-    return {
-      ...state,
-      users: state.users.filter(user => user.id !== action.id)
-    }
-    */
+      /*
+      return {
+        ...state,
+        users: state.users.filter(user => user.id !== action.id)
+      }
+      */
     case 'TOGGLE_ACTIVE':
       // immer 를 사용한 방법
       return produce(state, draft => {
@@ -70,14 +71,14 @@ function reducer(state, action) {
         user.active = !user.active;
       });
 
-    /*
-    return {
-      ...state,
-      users: state.users.map(user =>
-        user.id === action.id ? { ...user, active: !user.action } : user
-      )
-    }
-    */
+      /*
+      return {
+        ...state,
+        users: state.users.map(user =>
+          user.id === action.id ? { ...user, active: !user.action } : user
+        )
+      }
+      */
     default:
       return state;
   }
@@ -127,6 +128,17 @@ function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { users } = state;
 
+  // 커스텀 hooks useInputs 를 이용하기 때문에 주석 처리
+  // const { username, email } = state.inputs;
+
+  // useInputs 를 사용해 inputs 관리
+  const [{ username, email }, onChange, onReset] = useInputs({
+    username: '',
+    email: ''
+  });
+
+  const nextId = useRef(4);
+
   const count = useMemo(() => countActiveUsers(users), [users]);
 
   // Context API 사용을 위해 주석 처리
@@ -146,6 +158,20 @@ function App() {
   //     });
   //   }, []);
 
+  const onCreate = useCallback(
+    () => {
+      dispatch({
+        type: 'CREATE_USER',
+        user: {
+          id: nextId.current,
+          username,
+          email
+        }
+      });
+      onReset();
+      nextId.current += 1;
+    }, [username, email, onReset]);
+
   /*
   커스텀 hooks useInputs 를 이용하기 때문에 주석 처리
 
@@ -162,7 +188,11 @@ function App() {
 
   return (
     <UserDispatch.Provider value={dispatch}>
-      <CreateUser />
+      <CreateUser
+        username={username}
+        email={email}
+        onChange={onChange}
+        onCreate={onCreate} />
       <UserList
         users={users}
       // Context API 사용을 위해 주석 처리
